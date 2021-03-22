@@ -1,0 +1,476 @@
+{% include 'header-banner' %}
+
+{% assign is_gift_voucher = false %}
+
+{% for tag in product.tags %}
+  {% if tag contains 'Gift Voucher' %}
+    {% assign is_gift_voucher = true %}
+  {% endif %}
+{% endfor %}
+
+<div class="product-template__container page-border--full"
+  id="ProductSection-{{ section.id }}"
+  data-section-id="{{ section.id }}"
+  data-section-type="product"
+  data-enable-history-state="true"
+  data-ajax-enabled="{{ settings.enable_ajax }}">
+  {%- assign current_variant = product.selected_or_first_available_variant -%}
+  {%- assign product_image_zoom_size = '1024x1024' -%}
+  {%- assign product_image_scale = '2' -%}
+  {%- assign enable_zoom = section.settings.enable_zoom -%}
+  {%- assign compare_at_price = current_variant.compare_at_price -%}
+  {%- assign price = current_variant.price -%}
+
+  {% case section.settings.image_size %}
+    {% when 'small' %}
+      {%- assign product_image_width = 'medium-up--one-third' -%}
+      {%- assign product_description_width = 'medium-up--two-thirds' -%}
+      {%- assign product_thumbnail_width = 'medium-up--one-third' -%}
+      {%- assign height = 345 -%}
+    {% when 'medium' %}
+      {%- assign product_image_width = 'medium-up--one-half' -%}
+      {%- assign product_description_width = 'medium-up--one-half' -%}
+      {%- assign product_thumbnail_width = 'medium-up--one-quarter' -%}
+      {%- assign height = 680 -%}
+    {% when 'large' %}
+      {%- assign product_image_width = 'medium-up--two-thirds' -%}
+      {%- assign product_description_width = 'medium-up--one-third' -%}
+      {%- assign product_thumbnail_width = 'medium-up--one-fifth' -%}
+      {%- assign height = 720 -%}
+    {% when 'full' %}
+      {%- assign product_image_width = '' -%}
+      {%- assign product_description_width = '' -%}
+      {%- assign product_thumbnail_width = 'medium-up--one-eighth' -%}
+      {%- assign height = 1090 -%}
+      {%- assign enable_zoom = false -%}
+  {% endcase %}
+
+    <div class="page-width page-border grid product-single{% if section.settings.enable_payment_button %} product-single--{{ section.settings.image_size }}-image{% endif %}">
+
+    <div class="grid__item product-single__photos {{ product_image_width }}{% if section.settings.image_size == 'full' %} product-single__photos--full{% endif %}">
+      {%- assign featured_image = product.selected_or_first_available_variant.featured_image | default: product.featured_image -%}
+      {% for image in product.images %}
+        {% capture img_id %}FeaturedImage-{{ section.id }}-{{ image.id }}{% endcapture %}
+        {% capture img_class %}product-featured-img{% endcapture %}
+        {% capture zoom_img_id %}FeaturedImageZoom-{{ section.id }}-{{ image.id }}{% endcapture %}
+        {% capture img_wrapper_id %}{{ zoom_img_id }}-wrapper{% endcapture %}
+        {%- assign img_url = image | img_url: '1x1' | replace: '_1x1.', '_{width}x.' -%}
+
+        {% include 'image-style' with image: image, height: height, wrapper_id: img_wrapper_id, img_id: img_id %}
+
+        <div id="{{ img_wrapper_id }}" class="product-single__photo-wrapper js">
+          <div
+          id="{{ zoom_img_id }}"
+          style="padding-top:{{ 1 | divided_by: image.aspect_ratio | times: 100}}%;"
+          class="product-single__photo{% if enable_zoom %} js-zoom-enabled{% endif %}{% if product.images.size > 1 %} product-single__photo--has-thumbnails{% endif %}{% unless featured_image == image %} hide{% endunless %}"
+          data-image-id="{{ image.id }}"
+          {% if enable_zoom %} data-zoom="{{ image | img_url: product_image_zoom_size, scale: product_image_scale }}"{% endif %}>
+            <img id="{{ img_id }}"
+                 class="feature-row__image {{ img_class }} lazyload{% unless featured_image == image %} lazypreload{% endunless %}"
+                 src="{{ image | img_url: '300x300' }}"
+                 data-src="{{ img_url }}"
+                 data-widths="[180, 360, 540, 720, 900, 1080, 1296, 1512, 1728, 2048]"
+                 data-aspectratio="{{ image.aspect_ratio }}"
+                 data-sizes="auto"
+                 tabindex="-1"
+                 alt="{{ image.alt | escape }}">
+          </div>
+        </div>
+      {% endfor %}
+
+      <noscript>
+        {% capture product_image_size %}{{ height }}x{% endcapture %}
+        <img src="{{ featured_image | img_url: product_image_size, scale: product_image_scale }}" alt="{{ featured_image.alt }}" id="FeaturedImage-{{ section.id }}" class="product-featured-img" style="max-width: {{ height }}px;">
+      </noscript>
+
+      {% if product.images.size > 1 %}
+        {% if product.images.size > 3 %}
+          {%- assign enable_thumbnail_slides = true -%}
+        {% endif %}
+
+        <div class="thumbnails-wrapper{% if enable_thumbnail_slides == true %} thumbnails-slider--active{% endif %}">
+          {% if enable_thumbnail_slides == true %}
+            <button type="button" class="btn btn--link medium-up--hide thumbnails-slider__btn thumbnails-slider__prev thumbnails-slider__prev--{{ section.id }}">
+              {% include 'icon-chevron-left' %}
+              <span class="icon__fallback-text">{{ 'sections.slideshow.previous_slide' | t }}</span>
+            </button>
+          {% endif %}
+          <ul class="grid grid--uniform product-single__thumbnails product-single__thumbnails-{{ section.id }}">
+            {% for image in product.images %}
+              <li class="grid__item {{ product_thumbnail_width }} product-single__thumbnails-item js">
+                <a href="{{ image.src | img_url: product_image_zoom_size, scale: product_image_scale }}"
+                   class="text-link product-single__thumbnail product-single__thumbnail--{{ section.id }}"
+                   data-thumbnail-id="{{ image.id }}"
+                   {% if enable_zoom %}data-zoom="{{ image.src | img_url: product_image_zoom_size, scale: product_image_scale }}"{% endif %}>
+                     <img class="product-single__thumbnail-image" src="{{ image.src | img_url: '110x110', scale: 2 }}" alt="{{ 'sections.featured_product.gallery_thumbnail_alt' | t: imageAlt: image.alt | escape }}">
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+          {% if enable_thumbnail_slides == true %}
+            <button type="button" class="btn btn--link medium-up--hide thumbnails-slider__btn thumbnails-slider__next thumbnails-slider__next--{{ section.id }}">
+              {% include 'icon-chevron-right' %}
+              <span class="icon__fallback-text">{{ 'sections.slideshow.next_slide' | t }}</span>
+            </button>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="grid__item {{ product_description_width }}">
+      <div class="product-single__meta text-center" id="product-single__desc" data-aos="fade-up">
+
+        {% unless is_gift_voucher %}
+          {% for variant in product.variants %}
+            {% if variant.available %}
+              {% assign year = variant.title %}
+              <h5 class="h6-secondary">{{year}}</h5>
+            {% else %}
+              {% assign year = '' %}
+            {% endif %}
+          {% endfor %}
+        {% endunless %}
+
+        <h1 class="product-single__title">{{ product.title | replace: year, ""}}</h1>
+
+        <h3 class="h3">
+          {% for tag in product.tags %}
+            {% if tag contains 'Notes:' %}
+              {{ tag | remove: 'Notes:' | remove: 'Notes: ' }}
+              {% unless forloop.last %} / {% endunless %}
+            {% endif %}
+          {% endfor %}
+        </h3>
+
+        <div class="product__price">
+          {% include 'product-price', variant: current_variant %}
+        </div>
+
+        {%- if shop.taxes_included or shop.shipping_policy.body != blank -%}
+          <div class="product__policies rte">
+            {%- if shop.taxes_included -%}
+              {{ 'products.product.include_taxes' | t }}
+            {%- endif -%}
+            {%- if shop.shipping_policy.body != blank -%}
+              {{ 'products.product.shipping_policy_html' | t: link: shop.shipping_policy.url }}
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+        {% include 'product-add-cart-form' %}
+
+        <p class="visually-hidden" data-product-status
+          aria-live="polite"
+          role="status"
+        ></p>
+
+        <p class="visually-hidden" data-loader-status
+          aria-live="assertive"
+          role="alert"
+          aria-hidden="true"
+        >{{ 'products.product.loader_label' | t }}</p>
+
+
+          <div class="product-single__description">
+            {% assign product_desc = product.description %}
+            {% if product_desc != blank %}
+              {% assign numWords = product_desc | split:' ' %}
+              {% if numWords.size > 20 %}
+                <div class="rte is-accordion">
+                  {{ product.description }}
+                </div>
+              {% else %}
+                <div class="rte">
+                    {{ product.description }}
+                </div>
+              {% endif %}
+            {% endif %}
+          </div>
+          <div class="text-center m-t-20 m-b-20">
+            <a href="#" class="accordion-trigger classic-link h5-secondary">
+                <span>Read more</span> {% include 'icon-chevron-down' %}
+            </a>
+          </div>
+      {% comment %}
+            If Tasting notes global metadata defined
+          {% endcomment %}
+          {% if shop.metafields.tasting_notes_page.tasting_notes_page.size > 0 %}
+            {% comment %}
+             Find tasting notes page handle
+            {% endcomment %}
+            {% assign tasting_note_handle = shop.metafields.tasting_notes_page.tasting_notes_page %}
+            {% assign tasting_note = pages[tasting_note_handle] %}
+
+            {% comment %}
+             Find index by value
+            {% endcomment %}
+            {% assign p = product.title | append: " " | append: year %}
+            {% assign product_details = '' %}
+
+            {% for t in tasting_note.metafields.product_name.product_name %}
+             {% assign new-title = forloop.index0 %}
+
+              {% if t == p %}
+                {% assign pdf = tasting_note.metafields.pdf.pdf[new-title] %}
+              {%else%}
+              {% continue %}
+              {% endif %}
+            {% endfor %}
+
+            {% comment %}
+              Get PDF file from object
+            {% endcomment %}
+
+          {% endif %}
+      		{% if pdf %}
+            <a href="{{ pdf }}" target="_blank" class="btn btn--full m-t-10">Download as a PDF {% include 'icon-download' %}</a>
+          {% endif %}
+        {% if section.settings.show_share_buttons %}
+          {% include 'social-sharing', share_title: product.title, share_permalink: product.url, share_image: product %}
+        {% endif %}
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- Content Panels -->
+
+{% comment %}
+    ACF Vars
+{% endcomment %}
+
+{% assign videoTitle = product.metafields.accentuate.video_title %}
+{% assign videoId = product.metafields.accentuate.youtube_video_id %}
+{% assign panelSubtitle = product.metafields.accentuate.subtitle %}
+{% assign panelLink = product.metafields.accentuate.page_link %}
+{% assign panelTitle = product.metafields.accentuate.title %}
+{% assign panelDesc = product.metafields.accentuate.description %}
+{% assign panelSignoff = product.metafields.accentuate.signoff %}
+{% assign panelCtaTitle = product.metafields.accentuate.cta_link_title %}
+{% assign panelImg = product.metafields.accentuate.image %}
+
+<section class="page-border--top featured-panel grid grid--full">
+  <div class="grid__item large-desktop-up--one-half featured-panel__image video_module" data-aos="fade-in" data-id="{{ videoId }}">
+    <a href="#">
+      {% if panelImg %}
+          <img class="lazyload" src="{{ panelImg }}" alt="{{ videoTitle }}" />
+      {% else %}
+          <img class="lazyload" src="http://placehold.it/800x600" alt="{{ videoTitle }}" />
+      {% endif %}
+    </a>
+    <div class="content-panel__media-link">
+      {% if videoTitle %}
+      <h1 class="h5-secondary page-border__title page-border__title-rhs">
+          {{ videoTitle }}
+      </h1>
+      {% endif %}
+      <div class="content-panel__play">
+        <span aria-label="Play"></span>
+      </div>
+    </div>
+    <div class="video_module__wrapper">
+      <div class="video_container">
+        <div class="close_btn h5-secondary">CLOSE</div>
+        <div class="video_iframe">
+          <iframe src="" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid__item large-desktop-up--one-half featured-panel__copy">
+      <div class="featured-panel__inner">
+      {% if panelSubtitle %}
+      <h5 class="h5-secondary" data-aos="fade-up" data-aos-delay="50">
+        {% if panelLink %}
+        <a href="{{ panelLink }}">
+        {% endif %}
+            {{ panelSubtitle }}
+        {% if panelLink %}
+        </a>
+        {% endif %}
+      </h5>
+      {% endif %}
+      {% if panelTitle %}
+      <h2 class="h2-secondary" data-aos="fade-up" data-aos-delay="100">
+        {% if panelLink %}
+        <a href="{{ panelLink }}">
+        {% endif %}
+          {{ panelTitle }}
+        {% if panelLink %}
+        </a>
+        {% endif %}
+      </h2>
+      {% endif %}
+      <div class="rte" data-aos="fade-up" data-aos-delay="150">
+       {% if panelDesc %}
+          {{ panelDesc | strip_html }}
+       {% endif %}
+       {% if panelSignoff %}
+        <h5 class="margo">{{ panelSignoff }}</h5>
+       {% endif %}
+       {% if panelCtaTitle %}
+       <div class="text-center">
+          <a href="{{ panelLink }}" class="h5-secondary classic-link">
+            {{ panelCtaTitle }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% unless product == empty %}
+  <script type="application/json" id="ProductJson-{{ section.id }}">
+    {{ product | json }}
+  </script>
+{% endunless %}
+
+{% schema %}
+{
+  "name": {
+    "en": "Product pages"
+  },
+  "settings": [
+      {
+        "type": "header",
+        "content": "Hero Banner Content"
+      },
+      {
+        "type": "select",
+        "id": "theme_color",
+        "label": "Theme Color",
+        "options": [
+          {
+            "group": "color",
+            "value": "light",
+            "label": "Light"
+          },
+          {
+            "group": "color",
+            "value": "dark",
+            "label": "Dark"
+          },
+          {
+            "group": "color",
+            "value": "light-alternative",
+            "label": "Light Alternative"
+          },
+          {
+            "group": "color",
+            "value": "dark-alternative",
+            "label": "Dark Alternative"
+          }
+         ],
+         "default":   "dark",
+         "info":      "Note: Choose from light or dark depending on the background image uploaded."
+      },
+      {
+        "id": "image",
+        "type": "image_picker",
+        "label": "Page Header Image",
+        "info": "Recommended Dimensions: 2880x330px"
+      },
+      {
+        "type": "richtext",
+        "id": "blockquote",
+        "label": "Hero Blockquote"
+      },
+      {
+        "type": "text",
+        "id": "citation",
+        "label": "Hero Citation"
+      },
+      {
+        "type": "header",
+        "content": "Product Content"
+      },
+      {
+      "type": "select",
+      "id": "image_size",
+      "label": {
+        "en": "Image size"
+      },
+      "options": [
+        {
+          "value": "small",
+          "label": {
+            "en": "Small"
+          }
+        },
+        {
+          "value": "medium",
+          "label": {
+            "en": "Medium"
+          }
+        },
+        {
+          "value": "large",
+          "label": {
+            "en": "Large"
+          }
+        },
+        {
+          "value": "full",
+          "label": {
+            "en": "Full-width"
+          }
+        }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quantity_selector",
+      "label": {
+        "en": "Show quantity selector"
+      },
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_variant_labels",
+      "label": {
+        "en": "Show variant labels"
+      },
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": {
+        "en": "Show vendor"
+      },
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_zoom",
+      "label": {
+        "en": "Enable image zoom"
+      },
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_payment_button",
+      "label": {
+        "en": "Show dynamic checkout button"
+      },
+      "info": {
+        "en": "Each customer will see their preferred payment method from those available on your store, such as PayPal or Apple Pay. [Learn more](https://help.shopify.com/manual/using-themes/change-the-layout/dynamic-checkout)"
+      },
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_share_buttons",
+      "label": {
+        "en": "Show social sharing buttons"
+      },
+      "default": true
+    }
+  ]
+}
+{% endschema %}
