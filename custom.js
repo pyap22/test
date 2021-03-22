@@ -351,8 +351,7 @@ $(document).ready(function() {
    
     $(trigger).on('click', function(e){
       e.preventDefault();
-
-      //toggle transform class if clicked - PY
+      //toggle transform class if clicked
       $('.product-single__photo-wrapper img').toggleClass('product-single__photos__transform');
       // add border on the side of desc
       $('.product-single__meta').toggleClass('product-single__meta__border');
